@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>GradeMate - GPA &amp; CGPA Assistant</title>
+  <meta name="description" content="An offline GPA and CGPA calculator chatbot.">
+  <!-- Apply the saved theme before the page paints, so there is no flash -->
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem("grademate-theme");
+        if (theme !== "light" && theme !== "dark") {
+          theme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        }
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) { /* storage blocked: keep the default dark theme */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body data-view="chat">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><path d="M16 5 3 11.5 16 18l13-6.5L16 5z" fill="currentColor"/><path d="M8 15.2v5.3c0 1.9 3.6 3.5 8 3.5s8-1.6 8-3.5v-5.3l-8 4-8-4z" fill="currentColor" opacity=".65"/><path d="M29 12v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+      </span>
+      <div class="brand-text">
+        <h1>GradeMate</h1>
+        <p>GPA &amp; CGPA assistant that runs on your computer</p>
+      </div>
+    </div>
+    <button id="theme-toggle" class="icon-btn" type="button" aria-label="Switch to light mode" title="Switch theme">
+      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3 7 7M17 17l1.7 1.7M18.7 5.3 17 7M7 17l-1.7 1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+  </header>
+
+  <main class="layout">
+
+    <!-- ===================== CHAT ===================== -->
+    <section id="chat-panel" class="card chat" aria-label="Chat with GradeMate">
+      <div class="quick" id="quick-actions" role="toolbar" aria-label="Quick actions">
+        <button type="button" class="chip" data-action="gpa">Calculate GPA</button>
+        <button type="button" class="chip" data-action="cgpa">Calculate CGPA</button>
+        <button type="button" class="chip" data-action="target">Target Planner</button>
+        <button type="button" class="chip" data-action="scale">Grade Scale</button>
+        <button type="button" class="chip" data-action="help">Help</button>
+        <button type="button" class="chip chip-reset" data-action="reset">Reset</button>
+      </div>
+
+      <div id="messages" class="messages" role="log" aria-live="polite" aria-label="Conversation"></div>
+
+      <form id="chat-form" class="composer" autocomplete="off">
+        <input id="chat-input" type="text" maxlength="1000" enterkeyhint="send"
+               placeholder="Ask a question or type: Programming 3 A, Database 3 B+"
+               aria-label="Type your message">
+        <button id="send-btn" class="send" type="submit" aria-label="Send message">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l.1 6.5L15 12 3.5 13.9z" fill="currentColor"/></svg>
+        </button>
+      </form>
+    </section>
+
+    <!-- ===================== CALCULATORS ===================== -->
+    <aside id="tools-panel" class="card tools" aria-label="Calculators">
+      <div class="tabs" role="tablist" aria-label="Calculator type">
+        <button type="button" role="tab" class="tab active" id="tab-gpa" data-tab="gpa" aria-selected="true" aria-controls="panel-gpa">GPA</button>
+        <button type="button" role="tab" class="tab" id="tab-cgpa" data-tab="cgpa" aria-selected="false" aria-controls="panel-cgpa">CGPA</button>
+        <button type="button" role="tab" class="tab" id="tab-target" data-tab="target" aria-selected="false" aria-controls="panel-target">Planner</button>
+        <button type="button" role="tab" class="tab" id="tab-scale" data-tab="scale" aria-selected="false" aria-controls="panel-scale">Scale</button>
+      </div>
+
+      <div class="panels">
+
+        <!-- GPA -->
+        <section class="panel active" id="panel-gpa" role="tabpanel" aria-labelledby="tab-gpa">
+          <h2>Semester GPA</h2>
+          <p class="hint">Add each course with its credit hours and grade.</p>
+          <div class="course-head" aria-hidden="true"><span>Course name</span><span>Credits</span><span>Grade</span><span></span></div>
+          <div id="course-rows"></div>
+          <div class="row-actions">
+            <button type="button" id="add-course" class="btn ghost">+ Add Course</button>
+            <button type="button" id="load-example" class="link-btn">Fill an example</button>
+          </div>
+          <p class="live" id="gpa-live">Total credit hours: 0</p>
+          <div class="actions">
+            <button type="button" id="calc-gpa" class="btn primary">Calculate GPA</button>
+            <button type="button" id="clear-gpa" class="btn">Clear</button>
+          </div>
+          <p class="form-error" id="gpa-error" role="alert"></p>
+          <div class="result-slot" id="gpa-result"></div>
+        </section>
+
+        <!-- CGPA -->
+        <section class="panel" id="panel-cgpa" role="tabpanel" aria-labelledby="tab-cgpa" hidden>
+          <h2>Update my CGPA</h2>
+          <p class="hint">See how a new semester changes your cumulative GPA.</p>
+          <form id="form-cgpa" class="fields" novalidate>
+            <label class="field">Current CGPA
+              <input name="current_cgpa" type="number" step="any" inputmode="decimal" placeholder="e.g. 3.20">
+              <span class="field-error" data-for="current_cgpa"></span>
+            </label>
+            <label class="field">Completed credit hours
+              <input name="completed_credits" type="number" step="any" inputmode="decimal" placeholder="e.g. 60">
+              <span class="field-error" data-for="completed_credits"></span>
+            </label>
+            <label class="field">New semester GPA
+              <input name="semester_gpa" type="number" step="any" inputmode="decimal" placeholder="e.g. 3.80">
+              <span class="field-error" data-for="semester_gpa"></span>
+            </label>
+            <label class="field">New semester credit hours
+              <input name="semester_credits" type="number" step="any" inputmode="decimal" placeholder="e.g. 15">
+              <span class="field-error" data-for="semester_credits"></span>
+            </label>
+            <div class="actions full">
+              <button type="submit" class="btn primary">Calculate CGPA</button>
+              <button type="button" class="btn" data-clear="cgpa">Clear</button>
+            </div>
+          </form>
+          <p class="form-error" id="cgpa-error" role="alert"></p>
+          <div class="result-slot" id="cgpa-result"></div>
+        </section>
+
+        <!-- Target planner -->
+        <section class="panel" id="panel-target" role="tabpanel" aria-labelledby="tab-target" hidden>
+          <h2>Target CGPA planner</h2>
+          <p class="hint">Find the average GPA you need in your remaining credits.</p>
+          <form id="form-target" class="fields" novalidate>
+            <label class="field">Current CGPA
+              <input name="current_cgpa" type="number" step="any" inputmode="decimal" placeholder="e.g. 3.20">
+              <span class="field-error" data-for="current_cgpa"></span>
+            </label>
+            <label class="field">Completed credit hours
+              <input name="completed_credits" type="number" step="any" inputmode="decimal" placeholder="e.g. 60">
+              <span class="field-error" data-for="completed_credits"></span>
+            </label>
+            <label class="field">Target CGPA
+              <input name="target_cgpa" type="number" step="any" inputmode="decimal" placeholder="e.g. 3.40">
+              <span class="field-error" data-for="target_cgpa"></span>
+            </label>
+            <label class="field">Remaining credit hours
+              <input name="remaining_credits" type="number" step="any" inputmode="decimal" placeholder="e.g. 60">
+              <span class="field-error" data-for="remaining_credits"></span>
+            </label>
+            <div class="actions full">
+              <button type="submit" class="btn primary">Calculate Required GPA</button>
+              <button type="button" class="btn" data-clear="target">Clear</button>
+            </div>
+          </form>
+          <p class="form-error" id="target-error" role="alert"></p>
+          <div class="result-slot" id="target-result"></div>
+        </section>
+
+        <!-- Grade scale -->
+        <section class="panel" id="panel-scale" role="tabpanel" aria-labelledby="tab-scale" hidden>
+          <h2>Grade scale</h2>
+          <p class="hint">Change any value to match your university. Your scale is used in every GPA calculation.</p>
+          <div id="scale-grid" class="scale-grid"></div>
+          <div class="actions">
+            <button type="button" id="save-scale" class="btn primary">Save scale</button>
+            <button type="button" id="restore-scale" class="btn">Restore defaults</button>
+          </div>
+          <p class="live" id="scale-status">Using the default scale.</p>
+          <p class="form-error" id="scale-error" role="alert"></p>
+        </section>
+
+      </div>
+    </aside>
+  </main>
+
+  <nav class="mobile-nav" aria-label="Switch view">
+    <button type="button" class="active" data-view="chat">Chat</button>
+    <button type="button" data-view="tools">Calculators</button>
+  </nav>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
