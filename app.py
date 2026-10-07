@@ -20,7 +20,7 @@ from flask import Flask, jsonify, render_template, request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from chatbot import calculator          # noqa: E402
-from chatbot.chatbot import GPAChatbot, MAX_MESSAGE_LENGTH  # noqa: E402
+from chatbot import GPAChatbot, MAX_MESSAGE_LENGTH  # noqa: E402
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 256 * 1024      # reject huge requests
