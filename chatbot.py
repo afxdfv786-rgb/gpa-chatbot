@@ -19,8 +19,8 @@ import re
 import threading
 from collections import OrderedDict
 
-from . import calculator
-from . import nlp
+from chatbot import calculator
+from chatbot import nlp
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INTENTS_PATH = os.path.join(BASE_DIR, "data", "intents.json")
