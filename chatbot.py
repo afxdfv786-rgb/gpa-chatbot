@@ -23,7 +23,7 @@ import calculator
 import nlp
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-INTENTS_PATH = os.path.join(BASE_DIR, "data", "intents.json")
+INTENTS_PATH = os.path.join(BASE_DIR, "intents.json")
 
 MAX_SESSIONS = 500          # old sessions are dropped beyond this number
 MAX_MESSAGE_LENGTH = 1000
